@@ -16,7 +16,7 @@ class Tokenizer
      * Splits argv (minus script) into tokens: supports quotes and --
      * for stopping option parsing.
      */
-    public static function tokenize(array $argv): array
+    public static function tokenize(array $argv, ?Input $input = null): array
     {
         $argv = array_values($argv);
         array_shift($argv); // drop script
@@ -82,6 +82,11 @@ class Tokenizer
         }
         if ($current !== '') {
             $tokens[] = $current;
+        }
+
+        // Capture unclosed quote error
+        if ($inQuote && $input !== null) {
+            $input->addError("Unclosed quote: expected closing {$quoteChar}");
         }
 
         return $tokens;

@@ -32,7 +32,7 @@ final class Input
     public static function fromArgv(array $argv): self
     {
         $self = new self();
-        $tokens = Tokenizer::tokenize($argv);
+        $tokens = Tokenizer::tokenize($argv, $self);
 
         if ($tokens === []) {
             return $self;
@@ -49,6 +49,12 @@ final class Input
 
                 if ($eq !== false) {
                     $name = substr($t, 2, $eq-2);
+                    // Capture error: empty option name
+                    if ($name === '') {
+                        $self->errors[] = "Invalid option: option name cannot be empty (got '--=')";
+                        $i++;
+                        continue;
+                    }
                     $val  = substr($t, $eq+1);
                     $self->options[$name] = self::castBooleanLike($val);
                 } else {
@@ -64,6 +70,13 @@ final class Input
             } elseif (str_starts_with($t, '-')) {
                 // short flags like -vf or -o value
                 $letters = substr($t, 1);
+
+                // Capture error: lone dash with no flag
+                if ($letters === '') {
+                    $self->errors[] = "Invalid option: lone dash '-' with no flag";
+                    $i++;
+                    continue;
+                }
 
                 // Unix-standard: multiple letters are all boolean flags
                 if (strlen($letters) > 1) {

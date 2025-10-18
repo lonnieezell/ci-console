@@ -28,5 +28,11 @@
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "bin": ["bin/ci"]
+    "bin": ["bin/ci"],
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    }
 }

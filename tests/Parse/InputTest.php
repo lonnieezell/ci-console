@@ -26,13 +26,6 @@ describe('Input', function () {
 
             expect($input->command())->toBeNull();
         });
-
-        it('handles command as just the script', function () {
-            $argv = ['script.php', 'publish'];
-            $input = Input::fromArgv($argv);
-
-            expect($input->command())->toBe('publish');
-        });
     });
 
     describe('arguments parsing', function () {

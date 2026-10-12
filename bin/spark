@@ -1,0 +1,85 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use CodeIgniter\Console\App;
+use CodeIgniter\Console\CommandLocator;
+use CodeIgniter\Console\CommandRegistry;
+use CodeIgniter\Console\EnvLoader;
+use CodeIgniter\Console\Output\Console;
+use CodeIgniter\Console\Parse\Input;
+
+/**
+ * Determine and load the appropriate autoloader based on the environment
+ */
+function loadAutoloader(): void
+{
+    // 1. Check for Composer autoloader in parent application
+    //    (when ci-console is a dependency in a larger project)
+    $parentAutoloaders = [
+        getcwd() . '/vendor/autoload.php',           // From project root
+        dirname(getcwd()) . '/vendor/autoload.php',  // From subdirectory
+        dirname(__DIR__, 3) . '/autoload.php',       // From vendor/bin context
+    ];
+
+    foreach ($parentAutoloaders as $autoloader) {
+        if (file_exists($autoloader)) {
+            require_once $autoloader;
+            return;
+        }
+    }
+
+    // 2. Check for this package's own Composer autoloader (development)
+    $devAutoloader = __DIR__ . '/../vendor/autoload.php';
+    if (file_exists($devAutoloader)) {
+        require_once $devAutoloader;
+        return;
+    }
+
+    // 3. Check if running from within a PHAR (standalone)
+    if (str_starts_with(__FILE__, 'phar://')) {
+        require_once 'phar://' . __FILE__ . '/../vendor/autoload.php';
+        return;
+    }
+
+    throw new RuntimeException(
+        'Could not locate Composer autoloader. ' .
+        'Ensure Composer dependencies are installed or the PHAR is properly built.'
+    );
+}
+
+loadAutoloader();
+
+EnvLoader::load(getcwd());
+
+$console = new Console(
+    theme: $_ENV['CI_CONSOLE_THEME'] ?? 'default',
+    environment: $_ENV['CI_ENVIRONMENT'] ?? 'production'
+);
+
+$registry = new CommandRegistry();
+
+// Collect command directories
+$commandDirs = [
+    getcwd() . '/app/Commands',
+    getcwd() . '/src/Commands',
+    getcwd() . '/Commands',
+];
+
+// Filter to only existing directories
+$commandDirs = array_filter($commandDirs, 'is_dir');
+
+
+// Discover and register commands
+$input = new Input($argv);
+foreach (CommandLocator::discover($commandDirs, fn($class) => new $class($input, $console)) as $cmd) {
+    $registry->register($cmd);
+}
+
+$app = new App(
+    name: 'CodeIgniter Spark',
+    registry: $registry,
+    console: $console,
+);
+$app->run($argv);

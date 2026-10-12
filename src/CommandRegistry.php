@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace CodeIgniter\Console;
 
+/**
+ * The command registry maintains a list of available console commands.
+ */
 final class CommandRegistry
 {
     /** @var array<string, Command> */
@@ -15,10 +18,6 @@ final class CommandRegistry
     public function register(Command $command): void
     {
         $this->map[$command->name] = $command;
-
-        foreach ($command->aliases as $a) {
-            $this->map[$a] = $command;
-        }
     }
 
     /**
